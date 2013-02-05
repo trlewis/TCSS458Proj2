@@ -28,7 +28,7 @@ struct Point2D
 Thing createUnitCube()
 {
 	Thing cube;
-	cube.type = Thing::CUBE;
+	cube.type = Thing::WIRE_CUBE;
 	cube.points.push_back(vec4(-0.5, -0.5, -0.5, 1));
 	cube.points.push_back(vec4(-0.5, -0.5, 0.5, 1));
 	cube.points.push_back(vec4(-0.5, 0.5, -0.5, 1));
@@ -45,6 +45,32 @@ Thing createUnitCube()
 	//^those are the indices of the points array to use.
 
 	return cube;
+}
+
+Thing createSolidCube()
+{
+	Thing cube;
+	cube.type = Thing::SOLID_CUBE;
+
+	cube.points.push_back(vec4(-0.5, 0.5, -0.5, 1));
+	cube.points.push_back(vec4(0.5, 0.5, -0.5, 1));
+	cube.points.push_back(vec4(0.5, 0.5, 0.5, 1));
+	cube.points.push_back(vec4(-0.5, 0.5, 0.5, 1));
+
+	cube.points.push_back(vec4(-0.5, -0.5, -0.5, 1));
+	cube.points.push_back(vec4(0.5, -0.5, -0.5, 1));
+	cube.points.push_back(vec4(0.5, -0.5, 0.5, 1));
+	cube.points.push_back(vec4(-0.5, -0.5, 0.5, 1));
+
+	return cube;
+
+	//point sets that make up the triangles:
+	//top: (0, 1, 2), (0, 3, 2)
+	//bottom: (4, 5, 6), (4, 7, 6)
+	//left: (0, 4, 7), (0, 3, 7)
+	//right: (1, 5, 6), (1, 2, 6)
+	//front: (2, 3, 7), (2, 6, 7)
+	//back: (0, 1, 4), (1, 4, 5)
 }
 
 Thing createUnitCylinder(int n)

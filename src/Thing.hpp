@@ -21,9 +21,10 @@ public:
 	static const int LINE = 1;
 	static const int TRIANGLE = 2;
 	static const int RGB = 3;
-	static const int CUBE = 4;
-	static const int CYLINDER = 5;
-	static const int CONE = 6;
+	static const int WIRE_CUBE = 4;
+	static const int SOLID_CUBE = 5;
+	static const int CYLINDER = 6;
+	static const int CONE = 7;
 
 	int type;
 	std::vector<vec4> points;

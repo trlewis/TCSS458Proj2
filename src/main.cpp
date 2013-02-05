@@ -29,6 +29,7 @@
 #include "helpers.hpp"
 #include "TriLines.hpp"
 #include "Thing.hpp"
+#include "keys.h"
 
 using namespace std;
 
@@ -45,9 +46,9 @@ int size;
 float* pixels;
 float red, green, blue;
 
-std::vector<Thing> things;
-
-mat4 CTM;
+std::vector<Thing> things; //the things to draw
+mat4 CTM; //current transformation matrix
+bool perspective_init = false;
 
 //FUNCTION PROTOTYPES
 int objToPix(float f, int pixels);
@@ -61,7 +62,7 @@ void putPixel(int x, int y, float r, float g, float b) {
         0 <= y && y < (int)window_height) {
         pixels[y*window_width*3+x*3] = r;  // red
         pixels[y*window_width*3+x*3+1] = g;  // green
-        pixels[y*window_width*3+x*3+2] = b;  // bluee
+        pixels[y*window_width*3+x*3+2] = b;  // blue
     } else {
         printf("Pixel out of bounds: %d %d", x, y);
     }
@@ -98,7 +99,7 @@ void display()
 			green = it->g;
 			blue = it->b;
 			break;
-		case Thing::CUBE: {
+		case Thing::WIRE_CUBE: {
 			// (0,1), (0,2), (0,4), (1,3),
 			// (1,5), (2,3), (2,6), (3,7),
 			// (4,5), (4,6), (5,7), (6,7)
@@ -237,6 +238,29 @@ void readData()
 			// the line is encountered whenever a // is read
 			if(strcmp(s, "DIM") == 0)
 				fscanf(input, "%d %d", &window_width, &window_height);
+			else if(strcmp(s, "FRUSTUM") == 0)
+			{
+				if(!perspective_init)
+				{
+					//TODO: create frustum thing.
+					//need to read: left/right/bottom/top/near/far
+					perspective_init = true;
+				}
+			}
+			else if(strcmp(s, "ORTHO") == 0)
+			{
+				if(!perspective_init)
+				{
+					//TODO: create ortho thing.
+					//need to read: left/right/bottom/top/near/far
+					perspective_init = true;
+				}
+			}
+			else if(strcmp(s, "LOOKAT") == 0)
+			{
+				//TODO: create lookat code.
+				//need to read: eyeX,eyeY,eyeZ,atX,atY,atZ,upX,upY,upZ
+			}
 			else if(strcmp(s, "LINE") == 0)
 			{
 				Thing t;
@@ -296,6 +320,10 @@ void readData()
 					*it = CTM * (*it);
 				}
 				things.push_back(t);
+			}
+			else if(strcmp(s, "SOLID_CUBE") == 0)
+			{
+				//TODO: create a solid cube
 			}
 			else if(strcmp(s, "CYLINDER") == 0)
 			{
@@ -378,28 +406,31 @@ int objToPix(float f, int pixels)
 
 void keyboardSpecial(int key, int x, int y)
 {
-	//100 = left
-	//101 = up
-	//102 = right
-	//103 = down
-
-	if(key == 100 || key == 102)
+	if(key == KEY_LEFT_ARROW || key == KEY_RIGHT_ARROW)
 	{
-		int deg = (key == 100) ? -2 : 2;
+		int deg = (key == KEY_LEFT_ARROW) ? -2 : 2;
 		for(std::vector<Thing>::iterator it = things.begin(),
 				end = things.end() ; it != end ; ++it)
 		{
 			thingRotateY(&*it, deg);
 		}
 	}
-	if(key == 101 || key == 103)
+	if(key == KEY_UP_ARROW || key == KEY_DOWN_ARROW)
 	{
-		int deg = (key == 101) ? -2 : 2;
+		int deg = (key == KEY_UP_ARROW) ? -2 : 2;
 		for(std::vector<Thing>::iterator it = things.begin(),
 				end = things.end() ; it != end ; ++it)
 		{
 			thingRotateX(&*it, deg);
 		}
+	}
+	if(key == KEY_o)
+	{
+		//TODO: set orthagonal view
+	}
+	if(key == KEY_p)
+	{
+		//TODO: set perspective view
 	}
 
 	glutPostRedisplay();
