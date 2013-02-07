@@ -25,6 +25,12 @@ struct Point2D
 	int x, y;
 };
 
+struct Point3D
+{
+	int x, y;
+	float z;
+};
+
 Thing createUnitCube()
 {
 	Thing cube;
@@ -213,6 +219,44 @@ std::vector<Point2D> getPointsFromLine2D(int x1, int y1, int x2, int y2)
 	}
 
 	return points;
+}
+
+std::vector<Point3D> getPointsFromLine3D(int x1, int y1, float z1,
+		int x2, int y2, float z2)
+{
+	if(x1 > x2)
+	{
+		int tempi = x1;
+		x1 = x2;
+		x2 = tempi;
+		tempi = y1;
+		y1 = y2;
+		y2 = tempi;
+		float tempf = z1;
+		z1 = z2;
+		z2 = tempf;
+	}
+
+	std::vector<Point2D> twopoints = getPointsFromLine2D(x1, y1, x2, y2);
+
+	std::vector<Point3D> threepoints;
+
+	float dz = z2 - z1; //difference in z between the two endpoints
+	float incz = dz/((float)twopoints.size()); //how much to increment
+
+	float ziter = z1; //the value to give the points
+	for(std::vector<Point2D>::iterator it = twopoints.begin(),
+			end = twopoints.end() ; it != end ; ++it)
+	{
+		Point3D p;
+		p.x = it->x;
+		p.y = it->y;
+		p.z = ziter;
+		threepoints.push_back(p);
+		ziter += incz;
+	}
+
+	return threepoints;
 }
 
 vec3 vec4Tovec3(vec4 &v)

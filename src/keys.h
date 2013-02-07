@@ -9,7 +9,7 @@
 #define KEYS_H_
 
 static const int KEY_UP_ARROW = 101;
-static const int KEY_DOWN_ARROR = 103;
+static const int KEY_DOWN_ARROW = 103;
 static const int KEY_LEFT_ARROW = 100;
 static const int KEY_RIGHT_ARROW = 102;
 
@@ -17,8 +17,8 @@ static const int KEY_b = 98;
 static const int KEY_f = 102;
 static const int KEY_l = 108;
 static const int KEY_n = 110;
-static const int KEY_o = 111;
-static const int KEY_p = 112;
+static const int KEY_o = 111; //ortho
+static const int KEY_p = 112; //perspective
 static const int KEY_r = 114;
 static const int KEY_t = 116;
 

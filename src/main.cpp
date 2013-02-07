@@ -44,6 +44,7 @@ unsigned int window_width,// = 512,
 int size;
 
 float* pixels;
+float* zbuffer;
 float red, green, blue;
 
 std::vector<Thing> things; //the things to draw
@@ -54,7 +55,10 @@ bool perspective_init = false;
 int objToPix(float f, int pixels);
 void drawLine(vec2 &v1, vec2 &v2);
 void drawLine(int x1, int y1, int x2, int y2);
+void drawLine3D(vec3 & v1, vec3 &v2);
+void drawLine3D(int x1, int y1, float z1, int x2, int y2, float z2);
 void drawTriangle(Thing* t);
+void drawTriangle3D(Thing* t);
 
 
 void putPixel(int x, int y, float r, float g, float b) {
@@ -64,12 +68,38 @@ void putPixel(int x, int y, float r, float g, float b) {
         pixels[y*window_width*3+x*3+1] = g;  // green
         pixels[y*window_width*3+x*3+2] = b;  // blue
     } else {
-        printf("Pixel out of bounds: %d %d", x, y);
+        printf("Pixel out of bounds: %d %d\n", x, y);
     }
+}
+
+void putPixel3D(int x, int y, float z, float r, float g, float b)
+{
+	if(x >= 0 && x < (int)window_width &&
+	   y >= 0 && y < (int)window_height)
+	{
+		int buff = y*window_width + x;
+
+		//TODO: figure out what the proper z-buffer conditions are...
+		if(z > zbuffer[buff])
+		{
+			zbuffer[buff] = z;
+	        pixels[y*window_width*3+x*3] = r;  // red
+	        pixels[y*window_width*3+x*3+1] = g;  // green
+	        pixels[y*window_width*3+x*3+2] = b;  // blue
+		}
+	}
+	else
+	{
+		printf("Pixel out of bounds: x=%d, y=%d\n", x, y);
+	}
 }
 
 void display()
 {
+	//TODO: figure out what to clear this to...
+	for(int i = 0 ; i < size ; i++)
+		zbuffer[i] = -100.0;
+
 	for(unsigned int y = 0 ; y < window_height ; y++)
 	{
 		for(unsigned int x = 0 ; x < window_width ; x++)
@@ -87,12 +117,14 @@ void display()
 		{
 		case Thing::LINE:
 		{
-			std::vector<vec2> points = vec4Tovec2(it->points);
-			drawLine(points[0], points[1]);
+			std::vector<vec3> points = vec4Tovec3(it->points);
+			//drawLine(points[0], points[1]);
+			drawLine3D(points[0], points[1]);
 			break;
 		}
 		case Thing::TRIANGLE:
-			drawTriangle(&*it);
+			//drawTriangle(&*it);
+			drawTriangle3D(&*it);
 			break;
 		case Thing::RGB:
 			red = it->r;
@@ -185,6 +217,25 @@ void drawLine(int x1, int y1, int x2, int y2)
 	}
 }
 
+void drawLine3D(vec3 & v1, vec3 &v2)
+{
+	int x1 = objToPix(v1.x, window_width);
+	int y1 = objToPix(v1.y, window_height);
+	int x2 = objToPix(v2.x, window_width);
+	int y2 = objToPix(v2.y, window_height);
+	drawLine3D(x1, y1, v1.z, x2, y2, v2.z);
+}
+
+void drawLine3D(int x1, int y1, float z1, int x2, int y2, float z2)
+{
+	std::vector<Point3D> points = getPointsFromLine3D(x1, y1, z1, x2, y2, z2);
+	for(std::vector<Point3D>::iterator it = points.begin(),
+			end = points.end() ; it != end ; ++it)
+	{
+		putPixel3D(it->x, it->y, it->z, red, green, blue);
+	}
+}
+
 void drawTriangle(Thing* t)
 {
 	std::vector<vec2> points = vec4Tovec2(t->points);
@@ -209,7 +260,73 @@ void drawTriangle(Thing* t)
 	}
 }
 
+void drawTriangle3D(Thing* t)
+{
+	std::vector<vec3> points = vec4Tovec3(t->points);
 
+	TriLines3D tl;
+
+	int x1 = objToPix(points[0].x, window_width);
+	int y1 = objToPix(points[0].y, window_height);
+	float z1 = points[0].z;
+	int x2 = objToPix(points[1].x, window_width);
+	int y2 = objToPix(points[1].y, window_height);
+	float z2 = points[1].z;
+	int x3 = objToPix(points[2].x, window_width);
+	int y3 = objToPix(points[2].y, window_height);
+	float z3 = points[2].z;
+
+	tl.addLine(x1, y1, z1, x2, y2, z2);
+	tl.addLine(x1, y1, z1, x3, y3, z3);
+	tl.addLine(x2, y2, z2, x3, y3, z3);
+
+	for(std::vector<HorizLine3D>::iterator it = tl.lines.begin(),
+			end = tl.lines.end() ; it != end ; ++it)
+	{
+		drawLine3D(it->left, it->y, it->zleft, it->right, it->y, it->zright);
+	}
+}
+
+void drawTriangle3D(vec4 a, vec4 b, vec4 c)
+{
+	Thing t;
+	t.type = Thing::TRIANGLE;
+
+	t.points.push_back(a);
+	t.points.push_back(b);
+	t.points.push_back(c);
+
+	drawTriangle3D(&t);
+}
+
+void drawWireCube3D(Thing* t)
+{
+//TODO: fill this out so the corresponding code can be removed from display()
+// but make sure to draw using the zbuffer
+}
+
+void drawSolidCube3D(Thing* t)
+{
+	//point sets that make up the triangles:
+	//top: (0, 1, 2), (0, 3, 2)
+	drawTriangle3D(t->points[0], t->points[1], t->points[2]);
+	drawTriangle3D(t->points[0], t->points[3], t->points[2]);
+	//bottom: (4, 5, 6), (4, 7, 6)
+	drawTriangle3D(t->points[4], t->points[5], t->points[6]);
+	drawTriangle3D(t->points[4], t->points[7], t->points[6]);
+	//left: (0, 4, 7), (0, 3, 7)
+	drawTriangle3D(t->points[0], t->points[4], t->points[7]);
+	drawTriangle3D(t->points[0], t->points[3], t->points[7]);
+	//right: (1, 5, 6), (1, 2, 6)
+	drawTriangle3D(t->points[1], t->points[5], t->points[6]);
+	drawTriangle3D(t->points[1], t->points[2], t->points[6]);
+	//front: (2, 3, 7), (2, 6, 7)
+	drawTriangle3D(t->points[2], t->points[3], t->points[7]);
+	drawTriangle3D(t->points[2], t->points[6], t->points[7]);
+	//back: (0, 1, 4), (1, 4, 5)
+	drawTriangle3D(t->points[0], t->points[1], t->points[4]);
+	drawTriangle3D(t->points[1], t->points[4], t->points[5]);
+}
 
 
 
@@ -234,8 +351,6 @@ void readData()
 		{
 			fscanf(input,"%s",s);
 
-			//TODO: create an if statement that will read until the end of
-			// the line is encountered whenever a // is read
 			if(strcmp(s, "DIM") == 0)
 				fscanf(input, "%d %d", &window_width, &window_height);
 			else if(strcmp(s, "FRUSTUM") == 0)
@@ -424,17 +539,11 @@ void keyboardSpecial(int key, int x, int y)
 			thingRotateX(&*it, deg);
 		}
 	}
-	if(key == KEY_o)
-	{
-		//TODO: set orthagonal view
-	}
-	if(key == KEY_p)
-	{
-		//TODO: set perspective view
-	}
 
 	glutPostRedisplay();
 }
+
+//TODO: create a regular keyboard handler function
 
 int main(int argc, char** argv)
 {
@@ -444,6 +553,7 @@ int main(int argc, char** argv)
 	readData();
 	size = window_width * window_height;
 	pixels = new float[size*3];
+	zbuffer = new float[size];
 
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
 	glutInitWindowSize(window_width, window_height);
