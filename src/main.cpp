@@ -40,6 +40,11 @@ using namespace std;
 #define TRUE 1
 #define FALSE 0
 
+//used to keep track of which projection to use.
+#define PROJ_DEFAULT 0
+#define PROJ_ORTHO 1
+#define PROJ_FRUSTUM 2
+
 unsigned int window_width,// = 512,
              window_height;// = 512;
 
@@ -52,7 +57,11 @@ float red, green, blue;
 
 std::vector<Thing> things; //the things to draw
 mat4 CTM; //current transformation matrix
+mat4 ortho_matrix;
+mat4 frustum_matrix;
+mat4 lookat_matrix;
 bool perspective_init = false;
+bool using_ortho = true;
 
 //FUNCTION PROTOTYPES
 int objToPix(float f, int pixels);

@@ -15,7 +15,7 @@
 #include "vec.h"
 #include "mat.h"
 
-struct Thing
+class Thing
 {
 public:
 	static const int LINE = 1;
@@ -29,6 +29,16 @@ public:
 	int type;
 	std::vector<vec4> points;
 	float r,g,b;
+
+	Thing clone()
+	{
+		Thing t;
+		t.type = type;
+		for(std::vector<vec4>::iterator it = points.begin(),
+				end = points.end() ; it != end ; ++it)
+			t.points.push_back(*it);
+		return t;
+	}
 };
 
 void thingRotateX(Thing* t, int deg)
