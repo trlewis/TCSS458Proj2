@@ -10,7 +10,7 @@
 #include "vec.h"
 
 //C includes
-#include <stdio.h>
+//#include <stdio.h>
 #include <string.h>
 
 #ifdef __APPLE__
@@ -24,6 +24,9 @@
 //C++ includes
 #include <vector>
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
 
 //my includes
 #include "helpers.hpp"
@@ -59,6 +62,7 @@ void drawLine3D(vec3 & v1, vec3 &v2);
 void drawLine3D(int x1, int y1, float z1, int x2, int y2, float z2);
 void drawTriangle(Thing* t);
 void drawTriangle3D(Thing* t);
+int parseString(std::stringstream* stream, std::vector<string>* v, char delim);
 
 
 void putPixel(int x, int y, float r, float g, float b) {
@@ -104,7 +108,6 @@ void display()
 	{
 		for(unsigned int x = 0 ; x < window_width ; x++)
 			putPixel(x, y, 1.0, 1.0, 1.0); //clear to white...
-			//putPixel(x,y, 1.0*y/window_height, 1.0*x/window_width,0);
 	}
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -118,12 +121,10 @@ void display()
 		case Thing::LINE:
 		{
 			std::vector<vec3> points = vec4Tovec3(it->points);
-			//drawLine(points[0], points[1]);
 			drawLine3D(points[0], points[1]);
 			break;
 		}
 		case Thing::TRIANGLE:
-			//drawTriangle(&*it);
 			drawTriangle3D(&*it);
 			break;
 		case Thing::RGB:
@@ -335,25 +336,29 @@ void drawSolidCube3D(Thing* t)
  */
 void readData()
 {
-	FILE* input;
-	printf("Enter name of input file (no blanks): ");
-	char filename[50];
-	gets(filename);
+	string str;
+	cout << "Enter name of input file (no blanks): ";
+	getline(cin,str);
+	ifstream file(str.c_str());
 
-	char s[30];
-
-	input = fopen(filename, "r+");
-	if(input == NULL)
-		perror("Error opening file");
+	if(!file.is_open())
+		cerr << "Error opening file [" << str << "]" << endl;
 	else
 	{
-		while(feof(input) == FALSE)
+		string in;
+		std::vector<string> params;
+		while(file.good())
 		{
-			fscanf(input,"%s",s);
-
-			if(strcmp(s, "DIM") == 0)
-				fscanf(input, "%d %d", &window_width, &window_height);
-			else if(strcmp(s, "FRUSTUM") == 0)
+			getline(file,str);
+			std::stringstream ss(str);
+			getline(ss,in,' ');
+			if(in == "DIM")
+			{
+				parseString(&ss,&params,' ');
+				window_width = atoi(params[0].c_str());
+				window_height = atoi(params[1].c_str());
+			}
+			else if(in == "FRUSTUM")
 			{
 				if(!perspective_init)
 				{
@@ -362,7 +367,8 @@ void readData()
 					perspective_init = true;
 				}
 			}
-			else if(strcmp(s, "ORTHO") == 0)
+			//else if(strcmp(s, "ORTHO") == 0)
+			else if(in == "ORTHO")
 			{
 				if(!perspective_init)
 				{
@@ -371,137 +377,115 @@ void readData()
 					perspective_init = true;
 				}
 			}
-			else if(strcmp(s, "LOOKAT") == 0)
+			//else if(strcmp(s, "LOOKAT") == 0)
+			else if(in == "LOOKAT")
 			{
 				//TODO: create lookat code.
 				//need to read: eyeX,eyeY,eyeZ,atX,atY,atZ,upX,upY,upZ
 			}
-			else if(strcmp(s, "LINE") == 0)
+			else if(in == "LINE")
 			{
-				Thing t;
-				t.type = Thing::LINE;
-				for(int i = 0 ; i < 2 ; i++)
-				{
-					vec4 p;
-					fscanf(input, "%f %f %f", &p.x, &p.y, &p.z);
-					p.w = 1.0;
-					t.points.push_back(p);
-				}
-
-				for(std::vector<vec4>::iterator it = t.points.begin(),
-						end = t.points.end() ; it != end ; ++it)
-				{
-					*it = CTM * (*it);
-				}
-
+				//Thing t;
+				//t.type = Thing::LINE;
+				parseString(&ss,&params,' ');
+				Thing t = createLine(&params);
+				applyMatrix(&t, &CTM);
 				things.push_back(t);
 			}
-			else if(strcmp(s, "RGB") == 0)
+			else if(in == "RGB")
 			{
 				//read R, G, B
 				Thing t;
 				t.type = Thing::RGB;
-				fscanf(input, "%f %f %f", &t.r, &t.g, &t.b);
+				parseString(&ss,&params,' ');
+				t.r = atof(params[0].c_str());
+				t.g = atof(params[1].c_str());
+				t.b = atof(params[2].c_str());
 				things.push_back(t);
 			}
-			else if(strcmp(s, "TRI") == 0)
+			else if(in == "TRI")
 			{
 				//read x1, y1, x2, y2, x3, y3
-				Thing t;
-				t.type = Thing::TRIANGLE;
-				for(int i = 0 ; i < 3 ; i++)
-				{
-					vec4 p;
-					fscanf(input, "%f %f %f", &p.x, &p.y, &p.z);
-					p.w = 1.0;
-					t.points.push_back(p);
-				}
-
-				for(std::vector<vec4>::iterator it = t.points.begin(),
-						end = t.points.end() ; it != end ; ++it)
-				{
-					*it = CTM * (*it);
-				}
-
+				parseString(&ss,&params,' ');
+				Thing t = createTriangle(&params);
+				applyMatrix(&t,&CTM);
 				things.push_back(t);
 			}
-			else if(strcmp(s, "WIREFRAME_CUBE") == 0)
+			else if(in == "WIREFRAME_CUBE")
 			{
 				Thing t = createUnitCube();
-
-				for(std::vector<vec4>::iterator it = t.points.begin(),
-						end = t.points.end() ; it != end ; ++it)
-				{
-					*it = CTM * (*it);
-				}
+				applyMatrix(&t,&CTM);
 				things.push_back(t);
 			}
-			else if(strcmp(s, "SOLID_CUBE") == 0)
+			else if(in == "SOLID_CUBE")
 			{
 				//TODO: create a solid cube
 			}
-			else if(strcmp(s, "CYLINDER") == 0)
+			else if(in == "CYLINDER")
 			{
-				int c;
-				fscanf(input, "%d", &c);
-				Thing t = createUnitCylinder(c);
-
-				for(std::vector<vec4>::iterator it = t.points.begin(),
-						end = t.points.end() ; it != end ; ++it)
-				{
-					*it = CTM * (*it);
-				}
+				parseString(&ss,&params,' ');
+				Thing t = createUnitCylinder(atoi(params[0].c_str()));
+				applyMatrix(&t,&CTM);
 				things.push_back(t);
 			}
-			else if(strcmp(s, "CONE") == 0)
+			else if(in == "CONE")
 			{
-				int c;
-				fscanf(input, "%d", &c);
-				Thing t = createUnitCone(c);
-				for(std::vector<vec4>::iterator it = t.points.begin(),
-						end = t.points.end() ; it != end ; ++it)
-				{
-					*it = CTM * (*it);
-				}
+				parseString(&ss,&params,' ');
+				Thing t = createUnitCone(atoi(params[0].c_str()));
+				applyMatrix(&t,&CTM);
 				things.push_back(t);
 			}
-			else if(strcmp(s, "LOAD_IDENTITY_MATRIX") == 0)
+			else if(in == "LOAD_IDENTITY_MATRIX")
 			{
 				CTM = mat4();
 			}
-			else if(strcmp(s, "ROTATEX") == 0)
+			else if(in == "ROTATEX")
 			{
-				float angle;
-				fscanf(input, "%f", &angle);
-				CTM = RotateX(angle) * CTM;
+				parseString(&ss,&params,' ');
+				CTM = RotateX(atof(params[0].c_str())) * CTM;
 			}
-			else if(strcmp(s, "ROTATEY") == 0)
+			else if(in == "ROTATEY")
 			{
-				float angle;
-				fscanf(input, "%f", &angle);
-				CTM = RotateY(angle) * CTM;
+				parseString(&ss,&params,' ');
+				CTM = RotateY(atof(params[0].c_str())) * CTM;
 			}
-			else if(strcmp(s, "ROTATEZ") == 0)
+			else if(in == "ROTATEZ")
 			{
-				float angle;
-				fscanf(input, "%f", &angle);
-				CTM = RotateZ(angle) * CTM;
+				parseString(&ss,&params,' ');
+				CTM = RotateZ(atof(params[0].c_str())) * CTM;
 			}
-			else if(strcmp(s, "SCALE") == 0)
+			else if(in == "SCALE")
 			{
-				float sx, sy, sz;
-				fscanf(input, "%f %f %f", &sx, &sy, &sz);
-				CTM = Scale(sx, sy, sz) * CTM;
+				parseString(&ss,&params,' ');
+				float sx = atof(params[0].c_str());
+				float sy = atof(params[1].c_str());
+				float sz = atof(params[2].c_str());
+				CTM = Scale(sx,sy,sz) * CTM;
 			}
-			else if(strcmp(s, "TRANSLATE") == 0)
+			else if(in == "TRANSLATE")
 			{
-				float tx, ty, tz;
-				fscanf(input, "%f %f %f", &tx, &ty, &tz);
-				CTM = Translate(tx, ty, tz) * CTM;
+				parseString(&ss,&params,' ');
+				float tx = atof(params[0].c_str());
+				float ty = atof(params[1].c_str());
+				float tz = atof(params[2].c_str());
+				CTM = Translate(tx,ty,tz) * CTM;
 			}
 		}
 	}
-	fclose(input);
+	file.close();
+	//fclose(input);
+}
+
+int parseString(std::stringstream* stream, std::vector<string>* v, char delim)
+{
+	v->clear();
+	std::string in;
+	while(stream->good())
+	{
+		std::getline(*stream, in, delim);
+		v->push_back(in);
+	}
+	return v->size();
 }
 
 /**

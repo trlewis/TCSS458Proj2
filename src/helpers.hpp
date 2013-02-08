@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <iostream>
+#include <string>
 
 using namespace std;
 
@@ -30,6 +31,52 @@ struct Point3D
 	int x, y;
 	float z;
 };
+
+void applyMatrix(Thing* t, mat4* m)
+{
+	for(std::vector<vec4>::iterator it = t->points.begin(),
+			end = t->points.end() ; it != end ; ++it)
+	{
+		*it = (*m) * (*it);
+	}
+}
+
+Thing createLine(std::vector<string>* params)
+{
+	Thing line;
+	line.type = Thing::LINE;
+
+	std::vector<string>::iterator it = params->begin();
+	for(int i = 0 ; i < 2 ; i++)
+	{
+		vec4 p;
+		p.x = atof((it++)->c_str());
+		p.y = atof((it++)->c_str());
+		p.z = atof((it++)->c_str());
+		p.w = 1.0;
+		line.points.push_back(p);
+	}
+
+	return line;
+}
+
+Thing createTriangle(std::vector<string>* params)
+{
+	Thing tri;
+	tri.type = Thing::TRIANGLE;
+
+	std::vector<string>::iterator it = params->begin();
+	for(int i = 0 ; i < 3 ; i++)
+	{
+		vec4 p;
+		p.x = atof((it++)->c_str());
+		p.y = atof((it++)->c_str());
+		p.z = atof((it++)->c_str());
+		p.w = 1.0;
+		tri.points.push_back(p);
+	}
+	return tri;
+}
 
 Thing createUnitCube()
 {
