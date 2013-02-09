@@ -5,8 +5,8 @@
  *      Author: Travis Lewis
  */
 
-#ifndef OBJECT_HPP_
-#define OBJECT_HPP_
+#ifndef THING_HPP_
+#define THING_HPP_
 
 //std includes
 #include <vector>
@@ -15,8 +15,7 @@
 #include "vec.h"
 #include "mat.h"
 
-class Thing
-{
+class Thing {
 public:
 	static const int LINE = 1;
 	static const int TRIANGLE = 2;
@@ -30,8 +29,7 @@ public:
 	std::vector<vec4> points;
 	float r,g,b;
 
-	Thing clone()
-	{
+	Thing clone() {
 		Thing t;
 		t.type = type;
 		for(std::vector<vec4>::iterator it = points.begin(),
@@ -41,35 +39,25 @@ public:
 	}
 };
 
-void thingRotateX(Thing* t, int deg)
-{
+void thingRotateX(Thing* t, int deg) {
 	mat4 m = RotateX(deg);
 	for(std::vector<vec4>::iterator it = t->points.begin(),
 			end = t->points.end() ; it != end ; ++it)
-	{
-		*it = m * (*it);
-	}
+		*it = m*(*it);
 }
 
-void thingRotateY(Thing* t, int deg)
-{
+void thingRotateY(Thing* t, int deg) {
 	mat4 m = RotateY(deg);
 	for(std::vector<vec4>::iterator it = t->points.begin(),
 			end = t->points.end() ; it != end ; ++it)
-	{
-		*it = m * (*it);
-	}
+		*it = m*(*it);
 }
 
-void thingRotateZ(Thing* t, int deg)
-{
+void thingRotateZ(Thing* t, int deg) {
 	mat4 m = RotateZ(deg);
 	for(std::vector<vec4>::iterator it = t->points.begin(),
 			end = t->points.end() ; it != end ; ++it)
-	{
-		*it = m * (*it);
-	}
+		*it = m*(*it);
 }
 
-
-#endif /* OBJECT_HPP_ */
+#endif /* THING_HPP_ */
