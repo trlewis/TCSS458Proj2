@@ -758,6 +758,11 @@ mat4 LookAt( const vec4& eye, const vec4& at, const vec4& up )
     vec4 u = normalize(cross(up,n));
     vec4 v = normalize(cross(n,u));
     vec4 t = vec4(0.0, 0.0, 0.0, 1.0);
+    //attempt to fix code
+    n.w = 0;
+    u.w = 0;
+    v.w = 0;
+    //end attempt to fix code
     mat4 c = mat4(u, v, n, t);
     return c * Translate( -eye );
 }

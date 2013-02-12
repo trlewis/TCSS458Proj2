@@ -75,6 +75,7 @@ void drawLine3D(vec3 & v1, vec3 &v2);
 void drawLine3D(int x1, int y1, float z1, int x2, int y2, float z2);
 void drawTriangle(Thing* t);
 void drawTriangle3D(Thing* t);
+void drawWireCube3D(Thing* t);
 void drawSolidCube3D(Thing* t);
 int parseString(std::stringstream* stream, std::vector<string>* v, char delim);
 
@@ -92,12 +93,16 @@ void putPixel(int x, int y, float r, float g, float b) {
 
 void putPixel3D(int x, int y, float z, float r, float g, float b)
 {
+//	if(x == 230 && y == 200) {
+//		cout << "found pixel: x=" << x << "  y=" << y << "  z=" << z << " - ("
+//				<< r << "," << g << "," << b << ")\n";
+//	}
 	if(x >= 0 && x < (int)window_width &&
 			y >= 0 && y < (int)window_height) {
 		int buff = y*window_width+x;
 
 		//TODO: figure out what the proper z-buffer conditions are...
-		if(z > zbuffer[buff]) {
+		if(z < zbuffer[buff]) {
 			zbuffer[buff] = z;
 	        pixels[y*window_width*3+x*3] = r;  // red
 	        pixels[y*window_width*3+x*3+1] = g;  // green
@@ -111,7 +116,8 @@ void putPixel3D(int x, int y, float z, float r, float g, float b)
 void display() {
 	//TODO: figure out what to clear this to...
 	for(int i = 0 ; i < size ; i++)
-		zbuffer[i] = -100.0;
+		//zbuffer[i] = 10000.0;
+		zbuffer[i] = pfar + 0.1;
 
 	for(unsigned int y = 0 ; y < window_height ; y++) {
 		for(unsigned int x = 0 ; x < window_width ; x++)
@@ -120,89 +126,35 @@ void display() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-//	mat4 mat = mat4();
-//	mat[3].w = 0.0;
-//
-//	if(perspective_init && current_proj == PROJ_FRUSTUM)
-//		//mat = frustum_mat * mat;
-//		mat = frustum_mat;
-//		//mat = mat * frustum_mat;
-//	else if(perspective_init && current_proj == PROJ_ORTHO)
-//		//mat = ortho_mat * mat;
-//		mat = ortho_mat;
-//		//mat = mat * ortho_mat;
-//
-//	if(lookat_init) {
-//		//mat = lookat_mat * mat;
-//		mat = mat * lookat_mat;
-//	}
+	mat4 mat;
+	if(perspective_init) {
+		if(lookat_init) {
+			if(current_proj == PROJ_FRUSTUM)
+				mat = frustum_mat * lookat_mat;
+			else if(current_proj == PROJ_ORTHO)
+				mat = ortho_mat * lookat_mat;
 
-//	mat4 mat;
-//	if(perspective_init) {
-//		if(lookat_init) {
-//			if(current_proj == PROJ_FRUSTUM)
-//				mat = frustum_mat * lookat_mat;
-//			else if(current_proj == PROJ_ORTHO)
-//				mat = ortho_mat * lookat_mat;
-//
-//		} else {
-//			if(current_proj == PROJ_FRUSTUM)
-//				mat = frustum_mat;
-//			else if(current_proj == PROJ_ORTHO)
-//				mat = ortho_mat;
-//		}
-//	} else {
-//		if(lookat_init)
-//			mat = lookat_mat;
-//		else {
-//			mat = mat4();
-//			mat[3].w = 0.0;
-//		}
-//	}
-
+		} else {
+			if(current_proj == PROJ_FRUSTUM)
+				mat = frustum_mat;
+			else if(current_proj == PROJ_ORTHO)
+				mat = ortho_mat;
+		}
+	} else {
+		if(lookat_init)
+			mat = lookat_mat;
+		else {
+			mat = mat4();
+			mat[3].w = 0.0;
+		}
+	}
 
 	//this is where the stuff gets drawn.
 	for(std::vector<Thing>::iterator it = things.begin(), end = things.end();
 			it != end ; ++it) {
 
 		Thing th = it->clone();
-
-		mat4 mat;
-		if(perspective_init) {
-			if(lookat_init) {
-				if(current_proj == PROJ_FRUSTUM)
-					mat = frustum_mat * lookat_mat;// * th.CTM;
-				else if(current_proj == PROJ_ORTHO)
-					mat = ortho_mat * lookat_mat;// * th.CTM;
-
-			} else {
-				if(current_proj == PROJ_FRUSTUM)
-					mat = frustum_mat;// * th.CTM;
-				else if(current_proj == PROJ_ORTHO)
-					mat = ortho_mat;// * th.CTM;
-			}
-		} else {
-			if(lookat_init)
-				mat = lookat_mat;// * th.CTM;
-			else {
-				mat = mat4();// * th.CTM;
-				//mat[3].w = 0.0;
-			}
-		}
-
-		for(unsigned int i = 0 ; i < th.points.size() ; i++) {
-			th.points[i] = mat * th.points[i];
-			th.points[i] = th.points[i] / th.points[i].w;
-		}
-
-//		for(std::vector<vec4>::iterator i = th.points.begin(),
-//				e = th.points.end() ; i != e ; ++i) {
-//			*i = ()
-//		}
-
-		//mat4 p = th.CTM * mat;
-		//applyViewMatrix(&th,&p);
-		//applyViewMatrix(&th,&mat);
+		applyViewMatrix(&th,&mat);
 
 		switch(it->type) {
 		case Thing::LINE: {
@@ -221,26 +173,7 @@ void display() {
 			blue = it->b;
 			break;
 		case Thing::WIRE_CUBE: {
-			// (0,1), (0,2), (0,4), (1,3),
-			// (1,5), (2,3), (2,6), (3,7),
-			// (4,5), (4,6), (5,7), (6,7)
-			//std::vector<vec2> points = vec4Tovec2(it->points);
-			std::vector<vec3> points = vec4Tovec3(th.points);
-
-			drawLine3D(points[0],points[1]);
-			drawLine3D(points[0],points[2]);
-			drawLine3D(points[0],points[4]);
-			drawLine3D(points[1],points[3]);
-
-			drawLine3D(points[1],points[5]);
-			drawLine3D(points[2],points[3]);
-			drawLine3D(points[2],points[6]);
-			drawLine3D(points[3],points[7]);
-
-			drawLine3D(points[4],points[5]);
-			drawLine3D(points[4],points[6]);
-			drawLine3D(points[5],points[7]);
-			drawLine3D(points[6],points[7]);
+			drawWireCube3D(&th);
 			break;
 		}
 		case Thing::SOLID_CUBE: {
@@ -277,6 +210,8 @@ void display() {
 		}
 		}//switch type
 	}
+	//TODO: delete this
+		//putPixel(230,200,1,0,1);
 	//glDrawPixels writes a block of pixels to the framebuffer.
 	glDrawPixels(window_width,window_height,GL_RGB,GL_FLOAT,pixels);
 	glutSwapBuffers();
@@ -367,6 +302,22 @@ void drawTriangle3D(vec4 a, vec4 b, vec4 c) {
 void drawWireCube3D(Thing* t) {
 //TODO: fill this out so the corresponding code can be removed from display()
 // but make sure to draw using the zbuffer
+	std::vector<vec3> points = vec4Tovec3(t->points);
+
+	drawLine3D(points[0],points[1]);
+	drawLine3D(points[0],points[2]);
+	drawLine3D(points[0],points[4]);
+	drawLine3D(points[1],points[3]);
+
+	drawLine3D(points[1],points[5]);
+	drawLine3D(points[2],points[3]);
+	drawLine3D(points[2],points[6]);
+	drawLine3D(points[3],points[7]);
+
+	drawLine3D(points[4],points[5]);
+	drawLine3D(points[4],points[6]);
+	drawLine3D(points[5],points[7]);
+	drawLine3D(points[6],points[7]);
 }
 
 void drawSolidCube3D(Thing* t) {

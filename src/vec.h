@@ -328,6 +328,10 @@ struct vec4 {
     vec4( const vec2& v, const float z, const float w ) : z(z), w(w)
 	{ x = v.x;  y = v.y; }
 
+	vec3 xyz() {
+		return vec3(x,y,z);
+	}
+
     //
     //  --- Indexing Operator ---
     //
@@ -444,12 +448,21 @@ vec4 normalize( const vec4& v ) {
 }
 
 inline
+	/*   JM Fix Again!!!!  see below
 vec3 cross(const vec4& a, const vec4& b )
 {
     return vec3( a.y * b.z - a.z * b.y,
 		 a.z * b.x - a.x * b.z,
 		 a.x * b.y - a.y * b.x );
 }
+*/
+vec4 cross(const vec4& a, const vec4& b )
+{
+    return vec4( a.y * b.z - a.z * b.y,
+		 a.z * b.x - a.x * b.z,
+		 a.x * b.y - a.y * b.x, 0 );
+}
+
 
 //----------------------------------------------------------------------------
 

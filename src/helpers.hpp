@@ -39,23 +39,8 @@ void applyMatrix(Thing* t, mat4* m) {
 void applyViewMatrix(Thing * t, mat4* m) {
 	for(std::vector<vec4>::iterator it = t->points.begin(),
 			end = t->points.end() ; it != end ; ++it) {
-		//*it = (((*m) * (*it)) / (it->w));
-
-//		vec4 proj = *it;
-//		proj = (*m) * proj;
-//		proj = proj / proj.w;
-//		*it = proj;
-
-		std::cout << "before: \t" << *it;
-
 		*it = ((*m) * (*it));
-//		it->x /= it->w;
-//		it->y /= it->w;
-//		it->z /= it->w;
-//		it->w = 1.0;
 		*it = *it / it->w;
-
-		std::cout << "\nafter: \t\t" << *it << std::endl;
 	}
 }
 
@@ -276,11 +261,17 @@ std::vector<Point3D> getPointsFromLine3D(int x1, int y1, float z1,
 	}
 
 	std::vector<Point2D> twopoints = getPointsFromLine2D(x1, y1, x2, y2);
-
+	int zcount=0;
+	for(std::vector<Point2D>::iterator it = twopoints.begin(), end = twopoints.end()
+			; it != end ; ++it)
+		zcount++;
 	std::vector<Point3D> threepoints;
 
+
+	//float dz = z1 - z2;
 	float dz = z2 - z1; //difference in z between the two endpoints
-	float incz = dz/((float)twopoints.size()); //how much to increment
+	//float incz = dz/((float)twopoints.size()); //how much to increment
+	float incz = dz/((float)zcount);
 
 	float ziter = z1; //the value to give the points
 	for(std::vector<Point2D>::iterator it = twopoints.begin(),
