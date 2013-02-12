@@ -47,21 +47,21 @@ void thingRotateX(Thing* t, int deg) {
 	mat4 m = RotateX(deg);
 	for(std::vector<vec4>::iterator it = t->points.begin(),
 			end = t->points.end() ; it != end ; ++it)
-		*it = m*(*it);
+		*it = m * (*it);
 }
 
 void thingRotateY(Thing* t, int deg) {
 	mat4 m = RotateY(deg);
 	for(std::vector<vec4>::iterator it = t->points.begin(),
 			end = t->points.end() ; it != end ; ++it)
-		*it = m*(*it);
+		*it = m * (*it);
 }
 
 void thingRotateZ(Thing* t, int deg) {
 	mat4 m = RotateZ(deg);
 	for(std::vector<vec4>::iterator it = t->points.begin(),
 			end = t->points.end() ; it != end ; ++it)
-		*it = m*(*it);
+		*it = m * (*it);
 }
 
 #endif /* THING_HPP_ */

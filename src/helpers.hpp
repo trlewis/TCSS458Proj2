@@ -125,22 +125,12 @@ Thing createSolidCube() {
 
 Thing createUnitCylinder(int n) {
 	float theta = (2*PI) / n;
-
 	Thing t;
 	t.type = Thing::CYLINDER;
-
-//	float pythag = sqrt((0.5*0.5) + (0.5*0.5));
-
-	/*the commented out lines that use pythag make a cylinder that's quite a
-	bit wider than the unit cube. The uncommented lines work fairly well,
-	the resulting cylinder is a little short in the x axis, but still
-	better than the pythag one. */
 
 	for(int i = 0 ; i < n ; i++) {
 		float x = 0.5 * cos((float)i * theta + (theta/2.0));
 		float z = 0.5 * sin((float)i * theta + (theta/2.0));
-//		float x = pythag * cos((float)i * theta);
-//		float z = pythag * sin((float)i * theta);
 		vec4 v(x,0.5,z,1.0);
 		t.points.push_back(v);
 	}
@@ -148,8 +138,6 @@ Thing createUnitCylinder(int n) {
 	for(int i = 0 ; i < n ; i++) {
 		float x = 0.5 * cos((float)i * theta + (theta/2.0));
 		float z = 0.5 * sin((float)i * theta + (theta/2.0));
-//		float x = pythag * cos((float)i * theta);
-//		float z = pythag * sin((float)i * theta);
 		vec4 v(x,-0.5,z,1.0);
 		t.points.push_back(v);
 	}
@@ -167,7 +155,7 @@ Thing createUnitCone(int n) { //n = number of points that make up the base
 	for(int i = 0 ; i < n ; i++) {
 		float x = 0.5 * cos((float)i * theta + (theta/2.0));
 		float z = 0.5 * sin((float)i * theta + (theta/2.0));
-		vec4 v(x, -0.5, z, 1.0);
+		vec4 v(x,-0.5,z,1.0);
 		t.points.push_back(v);
 	}
 	return t;
@@ -260,18 +248,12 @@ std::vector<Point3D> getPointsFromLine3D(int x1, int y1, float z1,
 		z2 = tempf;
 	}
 
-	std::vector<Point2D> twopoints = getPointsFromLine2D(x1, y1, x2, y2);
-	int zcount=0;
-	for(std::vector<Point2D>::iterator it = twopoints.begin(), end = twopoints.end()
-			; it != end ; ++it)
-		zcount++;
+	std::vector<Point2D> twopoints = getPointsFromLine2D(x1,y1,x2,y2);
+
 	std::vector<Point3D> threepoints;
 
-
-	//float dz = z1 - z2;
 	float dz = z2 - z1; //difference in z between the two endpoints
-	//float incz = dz/((float)twopoints.size()); //how much to increment
-	float incz = dz/((float)zcount);
+	float incz = dz/((float)twopoints.size()); //how much to increment
 
 	float ziter = z1; //the value to give the points
 	for(std::vector<Point2D>::iterator it = twopoints.begin(),

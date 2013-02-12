@@ -91,12 +91,7 @@ void putPixel(int x, int y, float r, float g, float b) {
     }
 }
 
-void putPixel3D(int x, int y, float z, float r, float g, float b)
-{
-//	if(x == 230 && y == 200) {
-//		cout << "found pixel: x=" << x << "  y=" << y << "  z=" << z << " - ("
-//				<< r << "," << g << "," << b << ")\n";
-//	}
+void putPixel3D(int x, int y, float z, float r, float g, float b) {
 	if(x >= 0 && x < (int)window_width &&
 			y >= 0 && y < (int)window_height) {
 		int buff = y*window_width+x;
@@ -114,14 +109,11 @@ void putPixel3D(int x, int y, float z, float r, float g, float b)
 }
 
 void display() {
-	//TODO: figure out what to clear this to...
-	for(int i = 0 ; i < size ; i++)
-		//zbuffer[i] = 10000.0;
-		zbuffer[i] = pfar + 0.1;
-
 	for(unsigned int y = 0 ; y < window_height ; y++) {
-		for(unsigned int x = 0 ; x < window_width ; x++)
-			putPixel(x,y,1.0,1.0,1.0); //clear to white...
+		for(unsigned int x = 0 ; x < window_width ; x++) {
+			putPixel(x,y,1.0,1.0,1.0);
+			zbuffer[y*window_width + x] = pfar + 0.1;//clear zbuffer
+		}
 	}
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -210,8 +202,7 @@ void display() {
 		}
 		}//switch type
 	}
-	//TODO: delete this
-		//putPixel(230,200,1,0,1);
+
 	//glDrawPixels writes a block of pixels to the framebuffer.
 	glDrawPixels(window_width,window_height,GL_RGB,GL_FLOAT,pixels);
 	glutSwapBuffers();
@@ -300,8 +291,6 @@ void drawTriangle3D(vec4 a, vec4 b, vec4 c) {
 }
 
 void drawWireCube3D(Thing* t) {
-//TODO: fill this out so the corresponding code can be removed from display()
-// but make sure to draw using the zbuffer
 	std::vector<vec3> points = vec4Tovec3(t->points);
 
 	drawLine3D(points[0],points[1]);
@@ -367,52 +356,34 @@ void readData() {
 			} else if(in == "FRUSTUM") {
 				if(!perspective_init) {
 					parseString(&ss,&params,' ');
-//					float l = atof(params[0].c_str());
-//					float r = atof(params[1].c_str());
-//					float b = atof(params[2].c_str());
-//					float t = atof(params[3].c_str());
-//					float n = atof(params[4].c_str());
-//					float f = atof(params[5].c_str());
 					pleft = atof(params[0].c_str());
 					pright = atof(params[1].c_str());
 					pbottom = atof(params[2].c_str());
 					ptop = atof(params[3].c_str());
 					pnear = atof(params[4].c_str());
 					pfar = atof(params[5].c_str());
-					//zbuffer_default = pfar; //TODO: adjust as necessary
-					//frustum_mat = Frustum(l,r,b,t,n,f);
-					//ortho_mat = Ortho(l,r,b,t,n,f);
+
 					frustum_mat = Frustum(pleft,pright,pbottom,
 							ptop,pnear,pfar);
 					ortho_mat = Ortho(pleft,pright,pbottom,ptop,pnear,pfar);
-					cout << "frustum matrix: \n" << frustum_mat
-							<< "\northo matrix\n" << ortho_mat << endl;
+
 					perspective_init = true;
 					current_proj = PROJ_FRUSTUM;
 				}
 			} else if(in == "ORTHO") {
 				if(!perspective_init) {
 					parseString(&ss,&params,' ');
-//					float l = atof(params[0].c_str());
-//					float r = atof(params[1].c_str());
-//					float b = atof(params[2].c_str());
-//					float t = atof(params[3].c_str());
-//					float n = atof(params[4].c_str());
-//					float f = atof(params[5].c_str());
 					pleft = atof(params[0].c_str());
 					pright = atof(params[1].c_str());
 					pbottom = atof(params[2].c_str());
 					ptop = atof(params[3].c_str());
 					pnear = atof(params[4].c_str());
 					pfar = atof(params[5].c_str());
-//					zbuffer_default = f; //TODO: adjust as necessary
-//					frustum_mat = Frustum(l,r,b,t,n,f);
-//					ortho_mat = Ortho(l,r,b,t,n,f);
+
 					frustum_mat = Frustum(pleft,pright,pbottom,
 							ptop,pnear,pfar);
 					ortho_mat = Ortho(pleft,pright,pbottom,ptop,pnear,pfar);
-					cout << "frustum matrix: \n" << frustum_mat
-							<< "\northo matrix\n" << ortho_mat << endl;
+
 					perspective_init = true;
 					current_proj = PROJ_ORTHO;
 				}
@@ -430,10 +401,7 @@ void readData() {
 				lookat_mat = LookAt(vec4(ex,ey,ez,1),vec4(ax,ay,az,1),
 						vec4(ux,uy,uz,0.0));
 
-				cout << "lookat matrix: " << endl << lookat_mat;
 				lookat_init = true;
-				//TODO: create lookat code.
-				//need to read: eyeX,eyeY,eyeZ,atX,atY,atZ,upX,upY,upZ
 			} else if(in == "LINE") {
 				parseString(&ss,&params,' ');
 				Thing t = createLine(&params);
@@ -456,9 +424,6 @@ void readData() {
 				things.push_back(t);
 			} else if(in == "WIREFRAME_CUBE") {
 				Thing t = createUnitCube();
-				//t.CTM = CTM;
-				//mat4 m = frustum_mat * lookat_mat * CTM;
-				//applyMatrix(&t,&m);
 				applyMatrix(&t,&CTM);
 				things.push_back(t);
 			} else if(in == "SOLID_CUBE") {
@@ -572,8 +537,6 @@ void keyboardHandler(unsigned char key, int x, int y) {
 	frustum_mat = Frustum(pleft,pright,pbottom,ptop,pnear,pfar);
 	glutPostRedisplay();
 }
-
-//TODO: create a regular keyboard handler function
 
 int main(int argc, char** argv) {
 	glutInit(&argc, argv);
