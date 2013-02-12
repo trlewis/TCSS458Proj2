@@ -28,10 +28,14 @@ public:
 	int type;
 	std::vector<vec4> points;
 	float r,g,b;
+	mat4 CTM;
 
 	Thing clone() {
 		Thing t;
 		t.type = type;
+		t.r = r;
+		t.g = g;
+		t.b = b;
 		for(std::vector<vec4>::iterator it = points.begin(),
 				end = points.end() ; it != end ; ++it)
 			t.points.push_back(*it);

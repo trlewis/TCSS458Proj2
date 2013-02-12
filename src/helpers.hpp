@@ -21,34 +21,50 @@ using namespace std;
 
 #define PI 3.1415962
 
-struct Point2D
-{
+struct Point2D {
 	int x, y;
 };
 
-struct Point3D
-{
+struct Point3D {
 	int x, y;
 	float z;
 };
 
-void applyMatrix(Thing* t, mat4* m)
-{
+void applyMatrix(Thing* t, mat4* m) {
 	for(std::vector<vec4>::iterator it = t->points.begin(),
 			end = t->points.end() ; it != end ; ++it)
-	{
 		*it = (*m) * (*it);
+}
+
+void applyViewMatrix(Thing * t, mat4* m) {
+	for(std::vector<vec4>::iterator it = t->points.begin(),
+			end = t->points.end() ; it != end ; ++it) {
+		//*it = (((*m) * (*it)) / (it->w));
+
+//		vec4 proj = *it;
+//		proj = (*m) * proj;
+//		proj = proj / proj.w;
+//		*it = proj;
+
+		std::cout << "before: \t" << *it;
+
+		*it = ((*m) * (*it));
+//		it->x /= it->w;
+//		it->y /= it->w;
+//		it->z /= it->w;
+//		it->w = 1.0;
+		*it = *it / it->w;
+
+		std::cout << "\nafter: \t\t" << *it << std::endl;
 	}
 }
 
-Thing createLine(std::vector<string>* params)
-{
+Thing createLine(std::vector<string>* params) {
 	Thing line;
 	line.type = Thing::LINE;
 
 	std::vector<string>::iterator it = params->begin();
-	for(int i = 0 ; i < 2 ; i++)
-	{
+	for(int i = 0 ; i < 2 ; i++) {
 		vec4 p;
 		p.x = atof((it++)->c_str());
 		p.y = atof((it++)->c_str());
@@ -60,14 +76,12 @@ Thing createLine(std::vector<string>* params)
 	return line;
 }
 
-Thing createTriangle(std::vector<string>* params)
-{
+Thing createTriangle(std::vector<string>* params) {
 	Thing tri;
 	tri.type = Thing::TRIANGLE;
 
 	std::vector<string>::iterator it = params->begin();
-	for(int i = 0 ; i < 3 ; i++)
-	{
+	for(int i = 0 ; i < 3 ; i++) {
 		vec4 p;
 		p.x = atof((it++)->c_str());
 		p.y = atof((it++)->c_str());
@@ -78,8 +92,7 @@ Thing createTriangle(std::vector<string>* params)
 	return tri;
 }
 
-Thing createUnitCube()
-{
+Thing createUnitCube() {
 	Thing cube;
 	cube.type = Thing::WIRE_CUBE;
 	cube.points.push_back(vec4(-0.5, -0.5, -0.5, 1));
@@ -100,8 +113,7 @@ Thing createUnitCube()
 	return cube;
 }
 
-Thing createSolidCube()
-{
+Thing createSolidCube() {
 	Thing cube;
 	cube.type = Thing::SOLID_CUBE;
 
@@ -126,8 +138,7 @@ Thing createSolidCube()
 	//back: (0, 1, 4), (1, 4, 5)
 }
 
-Thing createUnitCylinder(int n)
-{
+Thing createUnitCylinder(int n) {
 	float theta = (2*PI) / n;
 
 	Thing t;
@@ -140,8 +151,7 @@ Thing createUnitCylinder(int n)
 	the resulting cylinder is a little short in the x axis, but still
 	better than the pythag one. */
 
-	for(int i = 0 ; i < n ; i++)
-	{
+	for(int i = 0 ; i < n ; i++) {
 		float x = 0.5 * cos((float)i * theta + (theta/2.0));
 		float z = 0.5 * sin((float)i * theta + (theta/2.0));
 //		float x = pythag * cos((float)i * theta);
@@ -150,8 +160,7 @@ Thing createUnitCylinder(int n)
 		t.points.push_back(v);
 	}
 
-	for(int i = 0 ; i < n ; i++)
-	{
+	for(int i = 0 ; i < n ; i++) {
 		float x = 0.5 * cos((float)i * theta + (theta/2.0));
 		float z = 0.5 * sin((float)i * theta + (theta/2.0));
 //		float x = pythag * cos((float)i * theta);
@@ -162,8 +171,7 @@ Thing createUnitCylinder(int n)
 	return t;
 }
 
-Thing createUnitCone(int n) //n = number of points that make up the base
-{
+Thing createUnitCone(int n) { //n = number of points that make up the base
 	Thing t;
 	t.type = Thing::CONE;
 
@@ -171,8 +179,7 @@ Thing createUnitCone(int n) //n = number of points that make up the base
 
 	float theta = (2*PI)/(float)n;
 
-	for(int i = 0 ; i < n ; i++)
-	{
+	for(int i = 0 ; i < n ; i++) {
 		float x = 0.5 * cos((float)i * theta + (theta/2.0));
 		float z = 0.5 * sin((float)i * theta + (theta/2.0));
 		vec4 v(x, -0.5, z, 1.0);
@@ -181,13 +188,11 @@ Thing createUnitCone(int n) //n = number of points that make up the base
 	return t;
 }
 
-std::vector<Point2D> getPointsFromLine2D(int x1, int y1, int x2, int y2)
-{
+std::vector<Point2D> getPointsFromLine2D(int x1, int y1, int x2, int y2) {
 	std::vector<Point2D> points;
 
 	//make sure x1 < x2
-	if(x1 > x2)
-	{
+	if(x1 > x2) {
 		int temp = x1;
 		x1 = x2;
 		x2 = temp;
@@ -201,33 +206,27 @@ std::vector<Point2D> getPointsFromLine2D(int x1, int y1, int x2, int y2)
 	int dy = y2 - y1;
 	float m = ((float)dy) / ((float)dx);
 
-	if(dx == 0 && dx != 0)
-	{ //vertical line
+	if(dx == 0 && dx != 0) { //vertical line
 		int inc = (y1 < y2) ? 1 : -1;
-		for(int i = y1 ; i != y2 ; i += inc)
-		{
+		for(int i = y1 ; i != y2 ; i += inc) {
 			Point2D p;
 			p.x = x1;
 			p.y = i;
 			points.push_back(p);
 		}
 	}
-	else if(dy == 0 && dx != 0)
-	{ // horizontal line
+	else if(dy == 0 && dx != 0) { // horizontal line
 		//x1 < x2 so we don't need to check that
-		for(int i = x1 ; i < x2 ; i++)
-		{
+		for(int i = x1 ; i < x2 ; i++) {
 			Point2D p;
 			p.x = i;
 			p.y = y1;
 			points.push_back(p);
 		}
 	}
-	else if(m <=1 && m >= -1)
-	{ // non-steep line, iterate over x
+	else if(m <=1 && m >= -1) { // non-steep line, iterate over x
 		float ypos = (float)y1;
-		for(int x = x1 ; x < x2 ; x++)
-		{
+		for(int x = x1 ; x < x2 ; x++) {
 			Point2D p;
 			p.x = x;
 			p.y = (int)ypos;
@@ -235,27 +234,21 @@ std::vector<Point2D> getPointsFromLine2D(int x1, int y1, int x2, int y2)
 			ypos += m;
 		}
 	}
-	else if(m > 1 || m < -1)
-	{ // steep line, iterate over y
+	else if(m > 1 || m < -1) { // steep line, iterate over y
 		m = 1.0/m; //invert slope for vertical use
 		float xpos;
-		if(y1 < y2)
-		{
+		if(y1 < y2) {
 			xpos = (float)x1;
-			for(int y = y1 ; y < y2 ; y++)
-			{
+			for(int y = y1 ; y < y2 ; y++) {
 				Point2D p;
 				p.x = (int)xpos;
 				p.y = y;
 				points.push_back(p);
 				xpos += m;
 			}
-		}
-		else
-		{
+		} else {
 			xpos = (float)x2;
-			for(int y = y2 ; y < y1 ; y++)
-			{
+			for(int y = y2 ; y < y1 ; y++) {
 				Point2D p;
 				p.x = (int)xpos;
 				p.y = y;
@@ -269,10 +262,8 @@ std::vector<Point2D> getPointsFromLine2D(int x1, int y1, int x2, int y2)
 }
 
 std::vector<Point3D> getPointsFromLine3D(int x1, int y1, float z1,
-		int x2, int y2, float z2)
-{
-	if(x1 > x2)
-	{
+		int x2, int y2, float z2) {
+	if(x1 > x2) {
 		int tempi = x1;
 		x1 = x2;
 		x2 = tempi;
@@ -293,8 +284,7 @@ std::vector<Point3D> getPointsFromLine3D(int x1, int y1, float z1,
 
 	float ziter = z1; //the value to give the points
 	for(std::vector<Point2D>::iterator it = twopoints.begin(),
-			end = twopoints.end() ; it != end ; ++it)
-	{
+			end = twopoints.end() ; it != end ; ++it) {
 		Point3D p;
 		p.x = it->x;
 		p.y = it->y;
@@ -306,8 +296,7 @@ std::vector<Point3D> getPointsFromLine3D(int x1, int y1, float z1,
 	return threepoints;
 }
 
-vec3 vec4Tovec3(vec4 &v)
-{
+vec3 vec4Tovec3(vec4 &v) {
 	vec3 vec;
 	vec.x = v.x;
 	vec.y = v.y;
@@ -316,13 +305,11 @@ vec3 vec4Tovec3(vec4 &v)
 	return vec;
 }
 
-std::vector<vec3> vec4Tovec3(std::vector<vec4> list)
-{
+std::vector<vec3> vec4Tovec3(std::vector<vec4> list) {
 	std::vector<vec3> converted;
 
 	for(std::vector<vec4>::iterator it = list.begin(), end = list.end() ;
-			it != end ; ++it)
-	{
+			it != end ; ++it) {
 		vec3 v;
 		v.x = it->x;
 		v.y = it->y;
@@ -332,21 +319,18 @@ std::vector<vec3> vec4Tovec3(std::vector<vec4> list)
 	return converted;
 }
 
-vec2 vec4Tovec2(vec4 &v)
-{
+vec2 vec4Tovec2(vec4 &v) {
 	vec2 vec;
 	vec.x = v.x;
 	vec.y = v.y;
 	return vec;
 }
 
-std::vector<vec2> vec4Tovec2(std::vector<vec4> list)
-{
+std::vector<vec2> vec4Tovec2(std::vector<vec4> list) {
 	std::vector<vec2> converted;
 
 	for(std::vector<vec4>::iterator it = list.begin(), end = list.end() ;
-			it != end ; ++it)
-	{
+			it != end ; ++it) {
 		vec2 v;
 		v.x = it->x;
 		v.y = it->y;
@@ -355,8 +339,7 @@ std::vector<vec2> vec4Tovec2(std::vector<vec4> list)
 	return converted;
 }
 
-vec2 vec3Tovec2(vec3 &v)
-{
+vec2 vec3Tovec2(vec3 &v) {
 	vec2 vec;
 	vec.x = v.x;
 	vec.y = v.y;
@@ -364,13 +347,11 @@ vec2 vec3Tovec2(vec3 &v)
 	return vec;
 }
 
-std::vector<vec2> vec3Tovec2(std::vector<vec3> list)
-{
+std::vector<vec2> vec3Tovec2(std::vector<vec3> list) {
 	std::vector<vec2> converted;
 
 	for(std::vector<vec3>::iterator it = list.begin(), end = list.end() ;
-			it != end ; ++it)
-	{
+			it != end ; ++it) {
 		vec2 v;
 		v.x = it->x;
 		v.y = it->y;

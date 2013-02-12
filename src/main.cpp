@@ -53,15 +53,19 @@ int size;
 
 float* pixels;
 float* zbuffer;
+float zbuffer_default;
 float red, green, blue;
 
 std::vector<Thing> things; //the things to draw
 mat4 CTM; //current transformation matrix
-mat4 ortho_matrix;
-mat4 frustum_matrix;
-mat4 lookat_matrix;
+mat4 ortho_mat = mat4();
+mat4 frustum_mat = mat4();
+mat4 lookat_mat = mat4();
+float pleft = 0.0, pright = 0.0, pbottom = 0.0, ptop = 0.0, pnear = 0.0,
+		pfar = 0.0;
 bool perspective_init = false;
-bool using_ortho = true;
+bool lookat_init = false;
+int current_proj = PROJ_DEFAULT;
 
 //FUNCTION PROTOTYPES
 int objToPix(float f, int pixels);
@@ -71,6 +75,7 @@ void drawLine3D(vec3 & v1, vec3 &v2);
 void drawLine3D(int x1, int y1, float z1, int x2, int y2, float z2);
 void drawTriangle(Thing* t);
 void drawTriangle3D(Thing* t);
+void drawSolidCube3D(Thing* t);
 int parseString(std::stringstream* stream, std::vector<string>* v, char delim);
 
 
@@ -115,17 +120,100 @@ void display() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+//	mat4 mat = mat4();
+//	mat[3].w = 0.0;
+//
+//	if(perspective_init && current_proj == PROJ_FRUSTUM)
+//		//mat = frustum_mat * mat;
+//		mat = frustum_mat;
+//		//mat = mat * frustum_mat;
+//	else if(perspective_init && current_proj == PROJ_ORTHO)
+//		//mat = ortho_mat * mat;
+//		mat = ortho_mat;
+//		//mat = mat * ortho_mat;
+//
+//	if(lookat_init) {
+//		//mat = lookat_mat * mat;
+//		mat = mat * lookat_mat;
+//	}
+
+//	mat4 mat;
+//	if(perspective_init) {
+//		if(lookat_init) {
+//			if(current_proj == PROJ_FRUSTUM)
+//				mat = frustum_mat * lookat_mat;
+//			else if(current_proj == PROJ_ORTHO)
+//				mat = ortho_mat * lookat_mat;
+//
+//		} else {
+//			if(current_proj == PROJ_FRUSTUM)
+//				mat = frustum_mat;
+//			else if(current_proj == PROJ_ORTHO)
+//				mat = ortho_mat;
+//		}
+//	} else {
+//		if(lookat_init)
+//			mat = lookat_mat;
+//		else {
+//			mat = mat4();
+//			mat[3].w = 0.0;
+//		}
+//	}
+
+
 	//this is where the stuff gets drawn.
 	for(std::vector<Thing>::iterator it = things.begin(), end = things.end();
 			it != end ; ++it) {
+
+		Thing th = it->clone();
+
+		mat4 mat;
+		if(perspective_init) {
+			if(lookat_init) {
+				if(current_proj == PROJ_FRUSTUM)
+					mat = frustum_mat * lookat_mat;// * th.CTM;
+				else if(current_proj == PROJ_ORTHO)
+					mat = ortho_mat * lookat_mat;// * th.CTM;
+
+			} else {
+				if(current_proj == PROJ_FRUSTUM)
+					mat = frustum_mat;// * th.CTM;
+				else if(current_proj == PROJ_ORTHO)
+					mat = ortho_mat;// * th.CTM;
+			}
+		} else {
+			if(lookat_init)
+				mat = lookat_mat;// * th.CTM;
+			else {
+				mat = mat4();// * th.CTM;
+				//mat[3].w = 0.0;
+			}
+		}
+
+		for(unsigned int i = 0 ; i < th.points.size() ; i++) {
+			th.points[i] = mat * th.points[i];
+			th.points[i] = th.points[i] / th.points[i].w;
+		}
+
+//		for(std::vector<vec4>::iterator i = th.points.begin(),
+//				e = th.points.end() ; i != e ; ++i) {
+//			*i = ()
+//		}
+
+		//mat4 p = th.CTM * mat;
+		//applyViewMatrix(&th,&p);
+		//applyViewMatrix(&th,&mat);
+
 		switch(it->type) {
 		case Thing::LINE: {
-			std::vector<vec3> points = vec4Tovec3(it->points);
+			//std::vector<vec3> points = vec4Tovec3(it->points);
+			std::vector<vec3> points = vec4Tovec3(th.points);
 			drawLine3D(points[0],points[1]);
 			break;
 		}
 		case Thing::TRIANGLE:
-			drawTriangle3D(&*it);
+			//drawTriangle3D(&*it);
+			drawTriangle3D(&th);
 			break;
 		case Thing::RGB:
 			red = it->r;
@@ -136,50 +224,55 @@ void display() {
 			// (0,1), (0,2), (0,4), (1,3),
 			// (1,5), (2,3), (2,6), (3,7),
 			// (4,5), (4,6), (5,7), (6,7)
-			std::vector<vec2> points = vec4Tovec2(it->points);
+			//std::vector<vec2> points = vec4Tovec2(it->points);
+			std::vector<vec3> points = vec4Tovec3(th.points);
 
-			drawLine(points[0],points[1]);
-			drawLine(points[0],points[2]);
-			drawLine(points[0],points[4]);
-			drawLine(points[1],points[3]);
+			drawLine3D(points[0],points[1]);
+			drawLine3D(points[0],points[2]);
+			drawLine3D(points[0],points[4]);
+			drawLine3D(points[1],points[3]);
 
-			drawLine(points[1],points[5]);
-			drawLine(points[2],points[3]);
-			drawLine(points[2],points[6]);
-			drawLine(points[3],points[7]);
+			drawLine3D(points[1],points[5]);
+			drawLine3D(points[2],points[3]);
+			drawLine3D(points[2],points[6]);
+			drawLine3D(points[3],points[7]);
 
-			drawLine(points[4],points[5]);
-			drawLine(points[4],points[6]);
-			drawLine(points[5],points[7]);
-			drawLine(points[6],points[7]);
-
+			drawLine3D(points[4],points[5]);
+			drawLine3D(points[4],points[6]);
+			drawLine3D(points[5],points[7]);
+			drawLine3D(points[6],points[7]);
 			break;
 		}
+		case Thing::SOLID_CUBE: {
+			drawSolidCube3D(&th);
+		}
 		case Thing::CYLINDER: {
-			std::vector<vec2> points = vec4Tovec2(it->points);
+			//std::vector<vec2> points = vec4Tovec2(it->points);
+			std::vector<vec3> points = vec4Tovec3(th.points);
 			unsigned int half = points.size()/2;
 			//top circle
 			for(unsigned int i = 1 ; i < half ; i++)
-				drawLine(points[i-1],points[i]);
-			drawLine(points[0],points[half-1]);
+				drawLine3D(points[i-1],points[i]);
+			drawLine3D(points[0],points[half-1]);
 			//bottom circle
 			for(unsigned int i = half ; i < points.size()-1 ; i++)
-				drawLine(points[i+1],points[i]);
-			drawLine(points[half],points[points.size()-1]);
+				drawLine3D(points[i+1],points[i]);
+			drawLine3D(points[half],points[points.size()-1]);
 			//middle lines
 			for(unsigned int i = 0 ; i < half ; i++)
-				drawLine(points[i],points[i+half]);
+				drawLine3D(points[i],points[i+half]);
 			break;
 		}
 		case Thing::CONE: {
-			std::vector<vec2> points = vec4Tovec2(it->points);
+			//std::vector<vec2> points = vec4Tovec2(it->points);
+			std::vector<vec3> points = vec4Tovec3(th.points);
 			//draw lines from tip to base
 			for(unsigned int i = 1 ; i < points.size() ; i++)
-				drawLine(points[0],points[i]);
+				drawLine3D(points[0],points[i]);
 			//draw base circle lines
 			for(unsigned int i = 2 ; i < points.size() ; i++)
-				drawLine(points[i-1],points[i]);
-			drawLine(points[1],points[points.size()-1]);
+				drawLine3D(points[i-1],points[i]);
+			drawLine3D(points[1],points[points.size()-1]);
 			break;
 		}
 		}//switch type
@@ -321,19 +414,73 @@ void readData() {
 				window_width = atoi(params[0].c_str());
 				window_height = atoi(params[1].c_str());
 			} else if(in == "FRUSTUM") {
-				if(!perspective_init)
-				{
-					//TODO: create frustum thing.
-					//need to read: left/right/bottom/top/near/far
+				if(!perspective_init) {
+					parseString(&ss,&params,' ');
+//					float l = atof(params[0].c_str());
+//					float r = atof(params[1].c_str());
+//					float b = atof(params[2].c_str());
+//					float t = atof(params[3].c_str());
+//					float n = atof(params[4].c_str());
+//					float f = atof(params[5].c_str());
+					pleft = atof(params[0].c_str());
+					pright = atof(params[1].c_str());
+					pbottom = atof(params[2].c_str());
+					ptop = atof(params[3].c_str());
+					pnear = atof(params[4].c_str());
+					pfar = atof(params[5].c_str());
+					//zbuffer_default = pfar; //TODO: adjust as necessary
+					//frustum_mat = Frustum(l,r,b,t,n,f);
+					//ortho_mat = Ortho(l,r,b,t,n,f);
+					frustum_mat = Frustum(pleft,pright,pbottom,
+							ptop,pnear,pfar);
+					ortho_mat = Ortho(pleft,pright,pbottom,ptop,pnear,pfar);
+					cout << "frustum matrix: \n" << frustum_mat
+							<< "\northo matrix\n" << ortho_mat << endl;
 					perspective_init = true;
+					current_proj = PROJ_FRUSTUM;
 				}
 			} else if(in == "ORTHO") {
 				if(!perspective_init) {
-					//TODO: create ortho thing.
-					//need to read: left/right/bottom/top/near/far
+					parseString(&ss,&params,' ');
+//					float l = atof(params[0].c_str());
+//					float r = atof(params[1].c_str());
+//					float b = atof(params[2].c_str());
+//					float t = atof(params[3].c_str());
+//					float n = atof(params[4].c_str());
+//					float f = atof(params[5].c_str());
+					pleft = atof(params[0].c_str());
+					pright = atof(params[1].c_str());
+					pbottom = atof(params[2].c_str());
+					ptop = atof(params[3].c_str());
+					pnear = atof(params[4].c_str());
+					pfar = atof(params[5].c_str());
+//					zbuffer_default = f; //TODO: adjust as necessary
+//					frustum_mat = Frustum(l,r,b,t,n,f);
+//					ortho_mat = Ortho(l,r,b,t,n,f);
+					frustum_mat = Frustum(pleft,pright,pbottom,
+							ptop,pnear,pfar);
+					ortho_mat = Ortho(pleft,pright,pbottom,ptop,pnear,pfar);
+					cout << "frustum matrix: \n" << frustum_mat
+							<< "\northo matrix\n" << ortho_mat << endl;
 					perspective_init = true;
+					current_proj = PROJ_ORTHO;
 				}
 			} else if(in == "LOOKAT") {
+				parseString(&ss,&params,' ');
+				float ex = atof(params[0].c_str());
+				float ey = atof(params[1].c_str());
+				float ez = atof(params[2].c_str());
+				float ax = atof(params[3].c_str());
+				float ay = atof(params[4].c_str());
+				float az = atof(params[5].c_str());
+				float ux = atof(params[6].c_str());
+				float uy = atof(params[7].c_str());
+				float uz = atof(params[8].c_str());
+				lookat_mat = LookAt(vec4(ex,ey,ez,1),vec4(ax,ay,az,1),
+						vec4(ux,uy,uz,0.0));
+
+				cout << "lookat matrix: " << endl << lookat_mat;
+				lookat_init = true;
 				//TODO: create lookat code.
 				//need to read: eyeX,eyeY,eyeZ,atX,atY,atZ,upX,upY,upZ
 			} else if(in == "LINE") {
@@ -358,10 +505,15 @@ void readData() {
 				things.push_back(t);
 			} else if(in == "WIREFRAME_CUBE") {
 				Thing t = createUnitCube();
+				//t.CTM = CTM;
+				//mat4 m = frustum_mat * lookat_mat * CTM;
+				//applyMatrix(&t,&m);
 				applyMatrix(&t,&CTM);
 				things.push_back(t);
 			} else if(in == "SOLID_CUBE") {
-				//TODO: create a solid cube
+				Thing t = createSolidCube();
+				applyMatrix(&t,&CTM);
+				things.push_back(t);
 			} else if(in == "CYLINDER") {
 				parseString(&ss,&params,' ');
 				Thing t = createUnitCylinder(atoi(params[0].c_str()));
@@ -442,6 +594,34 @@ void keyboardSpecial(int key, int x, int y) {
 	glutPostRedisplay();
 }
 
+void keyboardHandler(unsigned char key, int x, int y) {
+	//change projection styles
+	if(key == 'p' && perspective_init)
+		current_proj = PROJ_FRUSTUM;
+	if(key == 'o' && perspective_init)
+		current_proj = PROJ_ORTHO;
+
+	// adjust view voluem
+	if(key == 'l') pleft *= 1.10;
+	if(key == 'L') pleft *= 0.90;
+	if(key == 'r') pright *= 1.10;
+	if(key == 'R') pright *= 0.90;
+	if(key == 't') ptop *= 1.10;
+	if(key == 'T') ptop *= 0.90;
+	if(key == 'b') pbottom *= 1.10;
+	if(key == 'B') pbottom *= 0.90;
+	if(key == 'n') pnear *= 1.10;
+	if(key == 'N') pnear *= 0.90;
+	if(key == 'f') pfar *= 1.10;
+	if(key == 'F') pfar *= 0.90;
+
+	//if only projection styles change then this doesn't need to be
+	//recalculated, but meh, saves space on if statements.
+	ortho_mat = Ortho(pleft,pright,pbottom,ptop,pnear,pfar);
+	frustum_mat = Frustum(pleft,pright,pbottom,ptop,pnear,pfar);
+	glutPostRedisplay();
+}
+
 //TODO: create a regular keyboard handler function
 
 int main(int argc, char** argv) {
@@ -459,6 +639,7 @@ int main(int argc, char** argv) {
 
 	glutDisplayFunc(display);
 
+	glutKeyboardFunc(keyboardHandler);
 	glutSpecialFunc(keyboardSpecial);
 
 	glClearColor(0.0, 0.0, 0.0, 1.0);
